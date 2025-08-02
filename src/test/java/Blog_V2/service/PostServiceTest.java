@@ -298,32 +298,6 @@ public class PostServiceTest {
         assertNull(imagePath);
     }
 
-    @Test
-    public void testGetImageByPostId() throws IOException {
-        Post post = new Post();
-        post.setId(1);
-        post.setImagePath("/images/test.jpg");
-        
-        when(postRepository.findById(1)).thenReturn(Optional.of(post));
-        
-        Path uploadDir = Paths.get("uploads/images");
-        if (!Files.exists(uploadDir)) {
-            Files.createDirectories(uploadDir);
-        }
-        Path testImage = uploadDir.resolve("test.jpg");
-        Files.write(testImage, "test image content".getBytes());
-        
-        try {
-            byte[] imageBytes = postService.getImageByPostId(1);
-            
-            assertNotNull(imageBytes);
-            assertEquals("test image content", new String(imageBytes));
-        } finally {
-            Files.deleteIfExists(testImage);
-        }
-        
-        verify(postRepository).findById(1);
-    }
 
     @Test
     public void testGetImageByPostIdNoImage() throws IOException {
@@ -336,6 +310,32 @@ public class PostServiceTest {
         
         assertNull(imageBytes);
         
+        verify(postRepository).findById(1);
+    }
+    @Test
+    public void testGetImageByPostId() throws IOException {
+        Post post = new Post();
+        post.setId(1);
+        post.setImagePath("/images/test.jpg");
+
+        when(postRepository.findById(1)).thenReturn(Optional.of(post));
+
+        Path uploadDir = Paths.get("uploads/images");
+        if (!Files.exists(uploadDir)) {
+            Files.createDirectories(uploadDir);
+        }
+        Path testImage = uploadDir.resolve("test.jpg");
+        Files.write(testImage, "test image content".getBytes());
+
+        try {
+            byte[] imageBytes = postService.getImageByPostId(1);
+
+            assertNotNull(imageBytes);
+            assertEquals("test image content", new String(imageBytes));
+        } finally {
+            Files.deleteIfExists(testImage);
+        }
+
         verify(postRepository).findById(1);
     }
 
