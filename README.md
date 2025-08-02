@@ -2,6 +2,7 @@
 
 A simple web application for blogging with posts, comments, likes, and image uploads.
 
+
 ## 🚀 Full Workflow
 
 ### 1. Running the Application
