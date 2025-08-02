@@ -11,6 +11,5 @@ public class ApplicationIntegrationTest {
 
     @Test
     public void contextLoads() {
-        // Проверяет, что контекст приложения загружается без ошибок
     }
 }
