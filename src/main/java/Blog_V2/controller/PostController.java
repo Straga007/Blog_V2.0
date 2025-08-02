@@ -3,7 +3,6 @@ package Blog_V2.controller;
 import Blog_V2.model.Paging;
 import Blog_V2.model.Post;
 import Blog_V2.service.PostService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -14,16 +13,17 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/posts")
 public class PostController {
 
-    @Autowired
-    private PostService postService;
+    private final PostService postService;
+
+    public PostController(PostService postService) {
+        this.postService = postService;
+    }
 
     @GetMapping("/")
     public String redirectToPosts() {
@@ -38,14 +38,8 @@ public class PostController {
             Model model) {
 
         List<Post> posts = postService.getPosts(search, pageSize, pageNumber);
+        Paging paging = postService.createPaging(search, pageSize, pageNumber);
 
-        Paging paging = new Paging();
-        paging.setPageNumber(pageNumber);
-        paging.setPageSize(pageSize);
-        paging.setHasNext(postService.hasMorePosts(search, pageSize, pageNumber));
-        paging.setHasPrevious(pageNumber > 1);
-
-        // Add attributes to model
         model.addAttribute("posts", posts);
         model.addAttribute("search", search);
         model.addAttribute("paging", paging);
@@ -69,23 +63,7 @@ public class PostController {
             @RequestParam("tags") String tags,
             @RequestParam(value = "image", required = false) MultipartFile image) throws IOException {
 
-        Post post = postService.getPostById(id);
-        post.setTitle(title);
-        post.setText(text);
-
-        // Преобразуем строку тегов в список
-        List<String> tagsList = Arrays.stream(tags.split(","))
-                .map(String::trim)
-                .filter(tag -> !tag.isEmpty())
-                .collect(Collectors.toList());
-        post.setTags(tagsList);
-
-        if (image != null && !image.isEmpty()) {
-            String imagePath = postService.saveImage(image);
-            post.setImagePath(imagePath);
-        }
-
-        postService.savePost(post);
+        postService.updatePost(id, title, text, tags, image);
         return "redirect:/posts/" + id;
     }
     @GetMapping("/images/{id}")
@@ -107,7 +85,6 @@ public class PostController {
     @GetMapping("/{id}")
     public String post(@PathVariable int id, Model model) {
         Post post = postService.getPostById(id);
-        // Add post to model
         model.addAttribute("post", post);
         return "post";
     }

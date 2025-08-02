@@ -4,17 +4,18 @@ import Blog_V2.model.Post;
 import Blog_V2.service.PostService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 
+import javax.sql.DataSource;
 import java.util.Arrays;
 import java.util.List;
 
@@ -35,6 +36,23 @@ public class PostControllerTest {
         @Primary
         public PostService postService() {
             return Mockito.mock(PostService.class);
+        }
+
+        @Bean
+        @Primary
+        public DataSource dataSource() {
+            DriverManagerDataSource dataSource = new DriverManagerDataSource();
+            dataSource.setDriverClassName("org.h2.Driver");
+            dataSource.setUrl("jdbc:h2:mem:test-db");
+            dataSource.setUsername("sa");
+            dataSource.setPassword("");
+            return dataSource;
+        }
+
+        @Bean
+        @Primary
+        public JdbcTemplate jdbcTemplate(DataSource dataSource) {
+            return new JdbcTemplate(dataSource);
         }
     }
 
@@ -63,7 +81,17 @@ public class PostControllerTest {
         List<Post> posts = Arrays.asList(post);
 
         when(postService.getPosts(anyString(), anyInt(), anyInt())).thenReturn(posts);
-        when(postService.hasMorePosts(anyString(), anyInt(), anyInt())).thenReturn(false);
+        when(postService.createPaging(anyString(), anyInt(), anyInt())).thenAnswer(invocation -> {
+            int pageSize = invocation.getArgument(1);
+            int pageNumber = invocation.getArgument(2);
+
+            Blog_V2.model.Paging paging = new Blog_V2.model.Paging();
+            paging.setPageNumber(pageNumber);
+            paging.setPageSize(pageSize);
+            paging.setHasNext(false);
+            paging.setHasPrevious(pageNumber > 1);
+            return paging;
+        });
 
         mockMvc.perform(get("/posts")
                         .param("search", "")
@@ -76,7 +104,7 @@ public class PostControllerTest {
                 .andExpect(model().attributeExists("paging"));
 
         verify(postService).getPosts("", 10, 1);
-        verify(postService).hasMorePosts("", 10, 1);
+        verify(postService).createPaging("", 10, 1);
     }
 
     @Test

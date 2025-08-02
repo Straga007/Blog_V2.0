@@ -15,9 +15,12 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public class JdbcNativeUserRepository implements PostRepository {
-    @Autowired
-    private JdbcTemplate jdbcTemplate;
+public class JdbcPostRepository implements PostRepository {
+
+    private final JdbcTemplate jdbcTemplate;
+    public JdbcPostRepository(JdbcTemplate jdbcTemplate){
+        this.jdbcTemplate = jdbcTemplate;
+    }
     @Override
     public void save(Post post) {
         if (post.getId() == 0) {

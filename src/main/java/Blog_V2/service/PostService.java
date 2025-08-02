@@ -3,8 +3,8 @@ package Blog_V2.service;
 
 import Blog_V2.dao.repository.PostRepository;
 import Blog_V2.model.Comment;
+import Blog_V2.model.Paging;
 import Blog_V2.model.Post;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -19,8 +20,11 @@ import java.util.stream.Collectors;
 @Service
 public class PostService {
 
-    @Autowired
-    private PostRepository postRepository;
+    private final PostRepository postRepository;
+
+    public PostService(PostRepository postRepository) {
+        this.postRepository = postRepository;
+    }
 
     public List<Post> getPosts(String search, int pageSize, int pageNumber) {
         return postRepository.getPosts(search, pageSize, pageNumber);
@@ -61,10 +65,8 @@ public class PostService {
         int currentLikes = post.getLikesCount();
         int newLikes = like ? currentLikes + 1 : currentLikes - 1;
 
-        // Убедимся, что лайки не могут быть отрицательными
         post.setLikesCount(Math.max(newLikes, 0));
 
-        // Обновляем пост в базе данных
         postRepository.save(post);
     }
     public Post getPostById(int id) {
@@ -91,22 +93,16 @@ public class PostService {
             String tags,
             MultipartFile image) throws IOException {
 
-        //image
         String imagePath = saveImage(image);
 
         Post post = new Post();
         post.setTitle(title);
         post.setText(text);
         post.setImagePath(imagePath);
-        post.setTags(Arrays.stream(tags.split(","))
-                .map(String::trim)
-                .filter(tag -> !tag.isEmpty())
-                .collect(Collectors.toList()));
+        post.setTags(parseTags(tags));
         post.setLikesCount(0);
 
-        //H2
         postRepository.save(post);
-
         return post.getId();
     }
 
@@ -129,5 +125,33 @@ public class PostService {
         return "/images/" + fileName;
     }
 
+    public void updatePost(int id, String title, String text, String tags, MultipartFile image) throws IOException {
+        Post post = getPostById(id);
+        post.setTitle(title);
+        post.setText(text);
+        post.setTags(parseTags(tags));
 
+        if (image != null && !image.isEmpty()) {
+            String imagePath = saveImage(image);
+            post.setImagePath(imagePath);
+        }
+        savePost(post);
+    }
+    public Paging createPaging(String search, int pageSize, int pageNumber) {
+        Paging paging = new Paging();
+        paging.setPageNumber(pageNumber);
+        paging.setPageSize(pageSize);
+        paging.setHasNext(hasMorePosts(search, pageSize, pageNumber));
+        paging.setHasPrevious(pageNumber > 1);
+        return paging;
+    }
+    private List<String> parseTags(String tagsString) {
+        if (tagsString == null || tagsString.trim().isEmpty()) {
+            return new ArrayList<>();
+        }
+        return Arrays.stream(tagsString.split(","))
+                .map(String::trim)
+                .filter(tag -> !tag.isEmpty())
+                .collect(Collectors.toList());
+    }
 }

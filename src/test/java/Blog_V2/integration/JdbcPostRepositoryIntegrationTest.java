@@ -5,12 +5,17 @@ import Blog_V2.BlogGradleSpringWebappApplication;
 import Blog_V2.dao.repository.PostRepository;
 import Blog_V2.model.Comment;
 import Blog_V2.model.Post;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 
+import javax.sql.DataSource;
+import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -20,10 +25,19 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest(classes = BlogGradleSpringWebappApplication.class)
 @TestPropertySource(locations = "classpath:application-test.properties")
 @Transactional
-class JdbcNativeUserRepositoryIntegrationTest {
+class JdbcPostRepositoryIntegrationTest {
 
     @Autowired
     private PostRepository postRepository;
+
+    @Autowired
+    private DataSource dataSource;
+    @BeforeEach
+    void setUp() throws SQLException {
+        ResourceDatabasePopulator populator = new ResourceDatabasePopulator();
+        populator.addScript(new ClassPathResource("schema.sql"));
+        populator.execute(dataSource);
+    }
     @Test
     public void testSaveNewPostWithTagsAndComments() {
         Post post = new Post();
